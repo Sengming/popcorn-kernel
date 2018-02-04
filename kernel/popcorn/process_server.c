@@ -32,6 +32,7 @@
 #include "process_server.h"
 #include "vma_server.h"
 #include "page_server.h"
+#include "fs_server.h"
 #include "wait_station.h"
 #include "util.h"
 
@@ -969,8 +970,12 @@ static int __request_clone_remote(int dst_nid, struct task_struct *tsk, void __u
 	ret = copy_from_user(&req->arch.regsets, uregs,
 			regset_size(get_popcorn_node_arch(dst_nid)));
 	BUG_ON(ret != 0);
-
+    
 	save_thread_info(&req->arch);
+    
+    /* Send files_struct over to preserve open FDs */
+    ret = copy_over_open_files(tsk->files, req);
+    BUG_ON(ret != 0);
 
 	ret = pcn_kmsg_send(dst_nid, req, sizeof(*req));
 
