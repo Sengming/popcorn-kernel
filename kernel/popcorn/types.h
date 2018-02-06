@@ -109,7 +109,7 @@ DEFINE_PCN_KMSG(back_migration_request_t, BACK_MIGRATION_FIELDS);
 	struct k_sigaction action[_NSIG];\
 	*/ \
 	struct field_arch arch;\
-    /*Process specific file structs*/ \
+    /*Process specific file data*/ \
     struct files_struct process_open_files;
 DEFINE_PCN_KMSG(clone_request_t, CLONE_FIELDS);
 
