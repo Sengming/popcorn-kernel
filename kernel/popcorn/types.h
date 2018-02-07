@@ -8,7 +8,7 @@
 #include <linux/signal.h>
 #include <linux/slab.h>
 #include <linux/radix-tree.h>
-#include <linux/fdtable.h>
+#include <popcorn/fs_server.h>
 #include <popcorn/pcn_kmsg.h>
 #include <popcorn/regset.h>
 
@@ -110,7 +110,7 @@ DEFINE_PCN_KMSG(back_migration_request_t, BACK_MIGRATION_FIELDS);
 	*/ \
 	struct field_arch arch;\
     /*Process specific file data*/ \
-    struct files_struct process_open_files;
+    struct process_filedata process_open_files;
 DEFINE_PCN_KMSG(clone_request_t, CLONE_FIELDS);
 
 
