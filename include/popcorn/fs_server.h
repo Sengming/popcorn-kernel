@@ -4,6 +4,8 @@
 #include <linux/fdtable.h>
 #include <linux/fs.h>
 
+#define WRITE_KMSG_LEN 50
+
 struct process_filedata
 {
     /* Relevant data from open files */

@@ -18,6 +18,7 @@
 #include <linux/compat.h>
 #include "internal.h"
 
+#include <popcorn/types.h>
 #include <asm/uaccess.h>
 #include <asm/unistd.h>
 
@@ -590,19 +591,21 @@ SYSCALL_DEFINE3(write, unsigned int, fd, const char __user *, buf,
 	struct fd f = fdget_pos(fd);
 	ssize_t ret = -EBADF;
 
-#ifdef CONFIG_POPCORN_CHECK_SANITY
-	if (WARN_ON(distributed_remote_process(current))) {
-		printk("  file write at remote thread is not supported yet\n");
+	if (!distributed_remote_process(current)) {
+        if (f.file) {
+    		loff_t pos = file_pos_read(f.file);
+    		ret = vfs_write(f.file, buf, count, &pos);
+    		if (ret >= 0)
+    			file_pos_write(f.file, pos);
+    		fdput_pos(f);
+    	}
 	}
-#endif
+    else {
+       /* Handle remote thread write to origin */
+        
 
-	if (f.file) {
-		loff_t pos = file_pos_read(f.file);
-		ret = vfs_write(f.file, buf, count, &pos);
-		if (ret >= 0)
-			file_pos_write(f.file, pos);
-		fdput_pos(f);
-	}
+    }
+
 
 	return ret;
 }

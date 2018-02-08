@@ -332,6 +332,13 @@ DEFINE_PCN_KMSG(node_info_t, NODE_INFO_FIELDS);
 	int power_3;
 DEFINE_PCN_KMSG(sched_periodic_req, SCHED_PERIODIC_FIELDS);
 
+/**
+ * FS server. Not yet completely ported though
+ */
+#define REMOTE_FILE_WRITE_FIELDS \
+    unsigned int fd; \
+    char buf[WRITE_KMSG_LEN];
+DEFINE_PCN_KMSG(remote_write_req_t, REMOTE_FILE_WRITE_FIELDS);
 
 /**
  * Message routing using work queues
