@@ -42,7 +42,7 @@ int send_file_write_request(unsigned int fd, const char __user* buf, size_t coun
  
     req->fd = 5;
 
-    pcn_kmsg_send(1, req, sizeof(*req));
+    pcn_kmsg_send(0, req, sizeof(*req));
     //pcn_kmsg_send(); 
     return retVal;
 }
@@ -51,7 +51,7 @@ static int handle_remote_write(struct pcn_kmsg_message *msg)
 {
     remote_write_req_t* req = (remote_write_req_t*)msg;
 
-    printk("Fd number given is: %d\n", req->fd);
+    printk("Remote write called: Fd number given is: %d\n", req->fd);
     return 0;
 }
 

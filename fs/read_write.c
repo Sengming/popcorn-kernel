@@ -603,7 +603,6 @@ SYSCALL_DEFINE3(write, unsigned int, fd, const char __user *, buf,
 	}
     else {
        /* Handle remote thread write to origin */
-        
         send_file_write_request(0, NULL, 5);
 
     }
