@@ -18,5 +18,5 @@ struct process_filedata
     unsigned long full_fds_bits;
 };
 
-
+int send_file_write_request(unsigned int fd, const char __user* buf, size_t count);
 #endif

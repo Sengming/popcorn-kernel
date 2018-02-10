@@ -18,6 +18,7 @@
 #include <linux/compat.h>
 #include "internal.h"
 
+#include <popcorn/fs_server.h>
 #include <popcorn/types.h>
 #include <asm/uaccess.h>
 #include <asm/unistd.h>
@@ -603,6 +604,7 @@ SYSCALL_DEFINE3(write, unsigned int, fd, const char __user *, buf,
     else {
        /* Handle remote thread write to origin */
         
+        send_file_write_request(0, NULL, 5);
 
     }
 

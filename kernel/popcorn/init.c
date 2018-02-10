@@ -24,6 +24,7 @@ extern int process_server_init(void);
 extern int vma_server_init(void);
 extern int page_server_init(void);
 extern int remote_info_init(void);
+extern int fs_server_init(void);
 
 #ifdef CONFIG_POPCORN_STAT
 extern int statistics_init(void);
@@ -48,7 +49,7 @@ static int __init popcorn_init(void)
 	process_server_init();
 	page_server_init();
 	sched_server_init();
-
+        fs_server_init();
 	remote_info_init();
 
 #ifdef CONFIG_POPCORN_STAT
