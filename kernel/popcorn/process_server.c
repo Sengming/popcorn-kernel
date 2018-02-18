@@ -27,6 +27,7 @@
 #include <popcorn/types.h>
 #include <popcorn/bundle.h>
 #include <popcorn/cpuinfo.h>
+#include <popcorn/fs_server.h>
 
 #include "types.h"
 #include "process_server.h"
@@ -890,6 +891,10 @@ static int __process_remote_works(void)
 		case PCN_KMSG_TYPE_FUTEX_REQUEST:
 			process_remote_futex_request((remote_futex_request *)req);
 			break;
+        case PCN_KMSG_TYPE_FILE_REMOTE_WRITE:
+            handle_remote_write(req);
+            printk("Remote write at process_remote_works\n");
+            break;
 		case PCN_KMSG_TYPE_TASK_EXIT_REMOTE:
 			process_remote_task_exit((remote_task_exit_t *)req);
 			run = false;
