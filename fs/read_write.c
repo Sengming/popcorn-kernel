@@ -590,7 +590,7 @@ ssize_t do_sys_file_write(unsigned int fd, const char __user* buf, size_t count)
 {
 	struct fd f = fdget_pos(fd);
     ssize_t ret = -EBADF;
-    printk("sys_file_write called FD is: %d, buf: %s, count: %d\n", (int)fd, buf, (int)count);
+    //printk("sys_file_write called FD is: %d, buf: %s, count: %d\n", (int)fd, buf, (int)count);
     if (!distributed_remote_process(current)) {
         if (f.file) {
     		loff_t pos = file_pos_read(f.file);
