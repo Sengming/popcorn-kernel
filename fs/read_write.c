@@ -591,12 +591,10 @@ ssize_t do_sys_file_write(unsigned int fd, const char __user* buf, size_t count)
 	struct fd f = fdget_pos(fd);
     ssize_t ret = -EBADF;
     printk("sys_file_write called FD is: %d, buf: %s, count: %d\n", (int)fd, buf, (int)count);
-    printk("File: %d\n", (int)f.file);
     if (!distributed_remote_process(current)) {
         if (f.file) {
     		loff_t pos = file_pos_read(f.file);
     		ret = vfs_write(f.file, buf, count, &pos);
-    		printk("Return from vfs_write: %d\n", (int)ret);
             if (ret >= 0)
     			file_pos_write(f.file, pos);
     		fdput_pos(f);
@@ -604,10 +602,8 @@ ssize_t do_sys_file_write(unsigned int fd, const char __user* buf, size_t count)
 	}
     else {
         /* Handle remote thread write to origin */
-        send_file_write_request(fd, buf, count);
-
+        send_file_write_request(fd, buf, count, current->origin_nid);
     }
-
 	return ret;
 }
 EXPORT_SYMBOL(do_sys_file_write);
@@ -629,7 +625,7 @@ SYSCALL_DEFINE3(write, unsigned int, fd, const char __user *, buf,
 	}
     else {
         /* Handle remote thread write to origin */
-        send_file_write_request(fd, buf, count);
+        send_file_write_request(fd, buf, count, current->origin_nid);
 
     }
 

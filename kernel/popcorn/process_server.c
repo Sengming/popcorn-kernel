@@ -892,8 +892,7 @@ static int __process_remote_works(void)
 			process_remote_futex_request((remote_futex_request *)req);
 			break;
         case PCN_KMSG_TYPE_FILE_REMOTE_WRITE:
-            handle_remote_write(req);
-            printk("Remote write at process_remote_works\n");
+            process_remote_write(req);
             break;
 		case PCN_KMSG_TYPE_TASK_EXIT_REMOTE:
 			process_remote_task_exit((remote_task_exit_t *)req);
@@ -978,10 +977,10 @@ static int __request_clone_remote(int dst_nid, struct task_struct *tsk, void __u
     
 	save_thread_info(&req->arch);
     
-    /* Send files_struct over to preserve open FDs */
-    ret = copy_over_open_files(tsk->files, req);
-    BUG_ON(ret != 0);
-
+//    /* Send files_struct over to preserve open FDs */
+//    ret = copy_over_open_files(tsk->files, req);
+//    BUG_ON(ret != 0);
+//
 	ret = pcn_kmsg_send(dst_nid, req, sizeof(*req));
 
 out:

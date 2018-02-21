@@ -108,9 +108,7 @@ DEFINE_PCN_KMSG(back_migration_request_t, BACK_MIGRATION_FIELDS);
 	size_t sas_ss_size;\
 	struct k_sigaction action[_NSIG];\
 	*/ \
-	struct field_arch arch;\
-    /*Process specific file data*/ \
-    struct process_filedata process_open_files;
+	struct field_arch arch;
 DEFINE_PCN_KMSG(clone_request_t, CLONE_FIELDS);
 
 
