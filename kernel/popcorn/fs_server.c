@@ -33,7 +33,7 @@
 
 int send_file_write_request(unsigned int fd, const char __user* buf, size_t count, int origin_nid)
 {
-    int retVal = 0;
+    int ret = 0;
     remote_write_req_t* req = kmalloc(sizeof(remote_write_req_t), GFP_KERNEL);
 
 	/* Build request */
@@ -41,34 +41,43 @@ int send_file_write_request(unsigned int fd, const char __user* buf, size_t coun
 	req->header.prio = PCN_KMSG_PRIO_NORMAL;
     req->origin_pid = current->origin_pid; 
     req->fd = fd;
+    req->write_len = count;
     if (!!copy_from_user(req->buf, buf, count)){
-        printk("Overflow, some of the buffer was not sent!\n");
+        //TODO: Potentially handle this better by adding a series of writesto a kfifo
+        printk("FS_Server: Overflow, some of the buffer was not sent!\n");
+        ret = -ENOMEM;
+        goto out_fail;
     }
 
-    pcn_kmsg_send(origin_nid, req, sizeof(*req));
-    
-    return retVal;
+    if (!!(ret = pcn_kmsg_send(origin_nid, req, sizeof(*req)))) {
+        goto out_fail;
+    }
+        
+    return ret;
+
+out_fail:
+    kfree(req);
+    return ret;
 }
 
 extern ssize_t do_sys_file_write(unsigned int fd, const char __user* buf, size_t count);
 int process_remote_write(struct pcn_kmsg_message *msg)
 {
     remote_write_req_t* req = (remote_write_req_t*)msg;
-    
-    printk("sys_file_write ret: %d\n", (int)do_sys_file_write(req->fd, req->buf, (ssize_t)5));
-    printk("Remote write called: Fd number given is: %d\n", req->fd);
-
-    printk("Buffer is: %s\n", req->buf); 
+    BUG_ON(!req);
+    do_sys_file_write(req->fd, req->buf, req->write_len);
+    //printk("Remote write called: Fd number given is: %d\n", req->fd);
+    //printk("Buffer is: %s\n", req->buf); 
 
     return 0;
 }
 
-DEFINE_KMSG_RW_HANDLER(write_remote, remote_write_req_t, origin_pid);
+DEFINE_KMSG_RW_HANDLER(remote_write, remote_write_req_t, origin_pid);
 
 int __init fs_server_init(void)
 {
 	/* Register handlers */
-	REGISTER_KMSG_HANDLER(PCN_KMSG_TYPE_FILE_REMOTE_WRITE, write_remote);
+	REGISTER_KMSG_HANDLER(PCN_KMSG_TYPE_FILE_REMOTE_WRITE, remote_write);
 
 	return 0;
 }

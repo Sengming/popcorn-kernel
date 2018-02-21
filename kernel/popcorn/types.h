@@ -335,7 +335,8 @@ DEFINE_PCN_KMSG(sched_periodic_req, SCHED_PERIODIC_FIELDS);
  */
 #define REMOTE_FILE_WRITE_FIELDS \
     pid_t origin_pid;\
-    unsigned int fd; \
+    unsigned int fd;\
+    ssize_t write_len;\
     char buf[WRITE_KMSG_LEN];
 DEFINE_PCN_KMSG(remote_write_req_t, REMOTE_FILE_WRITE_FIELDS);
 

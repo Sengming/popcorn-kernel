@@ -611,25 +611,7 @@ EXPORT_SYMBOL(do_sys_file_write);
 SYSCALL_DEFINE3(write, unsigned int, fd, const char __user *, buf,
 		size_t, count)
 {
-	struct fd f = fdget_pos(fd);
-    ssize_t ret = -EBADF;
-    
-    if (!distributed_remote_process(current)) {
-        if (f.file) {
-    		loff_t pos = file_pos_read(f.file);
-    		ret = vfs_write(f.file, buf, count, &pos);
-    		if (ret >= 0)
-    			file_pos_write(f.file, pos);
-    		fdput_pos(f);
-    	}
-	}
-    else {
-        /* Handle remote thread write to origin */
-        send_file_write_request(fd, buf, count, current->origin_nid);
-
-    }
-
-	return ret;
+    return do_sys_file_write(fd, buf, count);
 }
 
 SYSCALL_DEFINE4(pread64, unsigned int, fd, char __user *, buf,
