@@ -43,7 +43,7 @@ int send_file_write_request(unsigned int fd, const char __user* buf, size_t coun
     req->fd = fd;
     req->write_len = count;
     if (!!copy_from_user(req->buf, buf, count)){
-        //TODO: Potentially handle this better by adding a series of writesto a kfifo
+        //TODO (Smyte): Potentially handle this better by adding a series of writesto a kfifo
         printk("FS_Server: Overflow, some of the buffer was not sent!\n");
         ret = -ENOMEM;
         goto out_fail;
@@ -74,10 +74,61 @@ int process_remote_write(struct pcn_kmsg_message *msg)
 
 DEFINE_KMSG_RW_HANDLER(remote_write, remote_write_req_t, origin_pid);
 
+/////////////////////////////////////////////////////////////////////
+// READ FUNCTIONS
+/////////////////////////////////////////////////////////////////////
+
+
+int send_file_read_request(unsigned int fd, size_t count, int origin_nid)
+{
+    int ret = 0;
+    int i = 0;
+    remote_read_req_t* req = kmalloc(sizeof(remote_read_req_t), GFP_KERNEL);
+
+	/* Build request */
+	req->header.type = PCN_KMSG_TYPE_FILE_REMOTE_READ_REQ;
+	req->header.prio = PCN_KMSG_PRIO_NORMAL;
+    req->origin_pid = current->origin_pid; 
+    req->fd = fd;
+    req->read_len = count;
+
+    if (!!(ret = pcn_kmsg_send(origin_nid, req, sizeof(*req)))) {
+        goto out_fail;
+    }
+    
+    for (i = 0; i < 4; ++i) {
+        printk("Read test vals: %d\n", current->remote->remote_read_test[i]);
+    }
+    return ret;
+
+out_fail:
+    kfree(req);
+    return ret;
+}
+
+int process_remote_read_req(struct pcn_kmsg_message *msg)
+{
+    int ret = 0;
+    remote_read_req_t* req = (remote_read_req_t*)msg;
+    BUG_ON(!req); 
+    // TODO: Process the read request 
+    return ret;
+}
+
+static int handle_remote_read_reply(struct pcn_kmsg_message *msg)
+{
+    int ret = 0;
+    // TODO: Populate;
+    return ret;
+}
+
+DEFINE_KMSG_RW_HANDLER(remote_read_req, remote_read_req_t, origin_pid);
+
 int __init fs_server_init(void)
 {
 	/* Register handlers */
 	REGISTER_KMSG_HANDLER(PCN_KMSG_TYPE_FILE_REMOTE_WRITE, remote_write);
-
+    REGISTER_KMSG_HANDLER(PCN_KMSG_TYPE_FILE_REMOTE_READ_REQ, remote_read_req);
+    REGISTER_KMSG_HANDLER(PCN_KMSG_TYPE_FILE_REMOTE_READ_REPLY, remote_read_reply);
 	return 0;
 }

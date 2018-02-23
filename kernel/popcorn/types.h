@@ -51,6 +51,9 @@ struct remote_context {
 	spinlock_t spawn_requests_lock;
 	struct list_head spawn_requests;
 
+    /* Remote file management*/
+    struct completion file_read_reply_received;
+    int remote_read_test[4];
 	pid_t remote_tgids[MAX_POPCORN_NODES];
 };
 
@@ -331,7 +334,7 @@ DEFINE_PCN_KMSG(node_info_t, NODE_INFO_FIELDS);
 DEFINE_PCN_KMSG(sched_periodic_req, SCHED_PERIODIC_FIELDS);
 
 /**
- * FS server. Not yet completely ported though
+ * Remote file write request.
  */
 #define REMOTE_FILE_WRITE_FIELDS \
     pid_t origin_pid;\
@@ -340,6 +343,23 @@ DEFINE_PCN_KMSG(sched_periodic_req, SCHED_PERIODIC_FIELDS);
     char buf[WRITE_KMSG_LEN];
 DEFINE_PCN_KMSG(remote_write_req_t, REMOTE_FILE_WRITE_FIELDS);
 
+/**
+ * Remote file read request.
+ */
+#define REMOTE_FILE_READ_REQ_FIELDS \
+    pid_t origin_pid;\
+    unsigned int fd;\
+    ssize_t read_len;
+DEFINE_PCN_KMSG(remote_read_req_t, REMOTE_FILE_READ_REQ_FIELDS);
+
+/**
+ * Remote file read reply.
+ */
+#define REMOTE_FILE_READ_REPLY_FIELDS \
+    pid_t origin_pid;\
+    unsigned int fd;\
+    ssize_t read_len;
+DEFINE_PCN_KMSG(remote_read_reply_t, REMOTE_FILE_READ_REPLY_FIELDS);
 /**
  * Message routing using work queues
  */

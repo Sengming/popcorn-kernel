@@ -530,7 +530,9 @@ ssize_t vfs_write(struct file *file, const char __user *buf, size_t count, loff_
 		return -EBADF;
 	if (!(file->f_mode & FMODE_CAN_WRITE))
 		return -EINVAL;
-	//if (unlikely(!access_ok(VERIFY_READ, buf, count)))
+	// TODO (Smyte): Add way to differentiate between remote or regular write to enable
+    // checking
+    //if (unlikely(!access_ok(VERIFY_READ, buf, count)))
 	//	return -EFAULT;
 
 	ret = rw_verify_area(WRITE, file, pos, count);
@@ -571,9 +573,9 @@ SYSCALL_DEFINE3(read, unsigned int, fd, char __user *, buf, size_t, count)
 	ssize_t ret = -EBADF;
 
 #ifdef CONFIG_POPCORN_CHECK_SANITY
-	if (WARN_ON(distributed_remote_process(current))) {
-		printk("  file read at remote thread is not supported yet\n");
-	}
+	if (distributed_remote_process(current)) {
+        send_file_read_request(fd, count, current->origin_nid);   	
+    }
 #endif
 
 	if (f.file) {
