@@ -573,7 +573,8 @@ ssize_t do_sys_file_read(unsigned int fd, char __user* buf, size_t count)
 	ssize_t ret = -EBADF;
 
 	if (distributed_remote_process(current)) {
-        send_file_read_request(fd, count, current->origin_nid, buf);   	
+        ret = send_file_read_request(fd, count, current->origin_nid, buf);
+        printk("Remote read buffer retrieved: %s\n", buf);
     }
 
 	if (f.file) {

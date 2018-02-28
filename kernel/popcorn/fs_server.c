@@ -80,9 +80,9 @@ DEFINE_KMSG_RW_HANDLER(remote_write, remote_write_req_t, origin_pid);
 /////////////////////////////////////////////////////////////////////
 
 
-int send_file_read_request(unsigned int fd, size_t count, int origin_nid, char __user* user_buf)
+ssize_t send_file_read_request(unsigned int fd, size_t count, int origin_nid, char __user* user_buf)
 {
-    int ret = 0;
+    ssize_t ret = 0;
     remote_read_req_t* req = kmalloc(sizeof(remote_read_req_t), GFP_KERNEL);
 	remote_read_reply_t* rep = NULL;
     struct wait_station *ws = get_wait_station(current); 
@@ -103,10 +103,10 @@ int send_file_read_request(unsigned int fd, size_t count, int origin_nid, char _
 	put_wait_station(ws);
 
     if (!WARN_ON(rep == NULL)){
-        ret = copy_to_user(user_buf, rep->buf, rep->read_len);
+        copy_to_user(user_buf, rep->buf, rep->read_len);
     }
     
-    return ret;
+    return rep->read_len;
 
 out_fail:
     kfree(req);

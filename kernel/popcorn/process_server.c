@@ -894,6 +894,9 @@ static int __process_remote_works(void)
         case PCN_KMSG_TYPE_FILE_REMOTE_WRITE:
             process_remote_write(req);
             break;
+        case PCN_KMSG_TYPE_FILE_REMOTE_READ_REQ:
+            process_remote_read_req(req);
+            break;
 		case PCN_KMSG_TYPE_TASK_EXIT_REMOTE:
 			process_remote_task_exit((remote_task_exit_t *)req);
 			run = false;

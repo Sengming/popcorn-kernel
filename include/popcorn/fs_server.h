@@ -19,5 +19,5 @@
 int send_file_write_request(unsigned int fd, const char __user* buf, 
         size_t count, int origin_nid);
 
-int send_file_read_request(unsigned int fd, size_t count, int origin_nid, char __user* user_buf);
+ssize_t send_file_read_request(unsigned int fd, size_t count, int origin_nid, char __user* user_buf);
 #endif
