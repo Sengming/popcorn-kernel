@@ -141,11 +141,6 @@ static struct remote_context *__alloc_remote_context(int nid, int tgid, bool rem
 	spin_lock_init(&rc->spawn_requests_lock);
 	init_completion(&rc->spawn_pended);
 
-    init_completion(&rc->file_read_reply_received);
-    for (i = 0; i < 4; ++i) {
-        rc->remote_read_test[i] = i;
-    }
-
 	memset(rc->remote_tgids, 0x00, sizeof(rc->remote_tgids));
 
 	INIT_RADIX_TREE(&rc->pages, GFP_ATOMIC);

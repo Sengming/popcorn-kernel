@@ -3,6 +3,7 @@
 #include <popcorn/fs_server.h>
 #include <popcorn/pcn_kmsg.h>
 #include <linux/uaccess.h>
+#include "wait_station.h"
 
 ///* TODO: Remove if not needed anymore */
 //int copy_over_open_files(struct files_struct* process_files, clone_request_t* req)
@@ -35,7 +36,7 @@ int send_file_write_request(unsigned int fd, const char __user* buf, size_t coun
 {
     int ret = 0;
     remote_write_req_t* req = kmalloc(sizeof(remote_write_req_t), GFP_KERNEL);
-
+    // TODO (Smyte): Potential Memory leak, take a look after implementing read function
 	/* Build request */
 	req->header.type = PCN_KMSG_TYPE_FILE_REMOTE_WRITE;
 	req->header.prio = PCN_KMSG_PRIO_NORMAL;
@@ -79,26 +80,32 @@ DEFINE_KMSG_RW_HANDLER(remote_write, remote_write_req_t, origin_pid);
 /////////////////////////////////////////////////////////////////////
 
 
-int send_file_read_request(unsigned int fd, size_t count, int origin_nid)
+int send_file_read_request(unsigned int fd, size_t count, int origin_nid, char __user* user_buf)
 {
     int ret = 0;
-    int i = 0;
     remote_read_req_t* req = kmalloc(sizeof(remote_read_req_t), GFP_KERNEL);
+	remote_read_reply_t* rep = NULL;
+    struct wait_station *ws = get_wait_station(current); 
 
-	/* Build request */
+    /* Build request */
 	req->header.type = PCN_KMSG_TYPE_FILE_REMOTE_READ_REQ;
 	req->header.prio = PCN_KMSG_PRIO_NORMAL;
     req->origin_pid = current->origin_pid; 
     req->fd = fd;
     req->read_len = count;
-
+   
     if (!!(ret = pcn_kmsg_send(origin_nid, req, sizeof(*req)))) {
         goto out_fail;
     }
-    
-    for (i = 0; i < 4; ++i) {
-        printk("Read test vals: %d\n", current->remote->remote_read_test[i]);
+
+    /* Ensure first read request has completed before sending another*/
+    rep = wait_at_station(ws);
+	put_wait_station(ws);
+
+    if (!WARN_ON(rep == NULL)){
+        ret = copy_to_user(user_buf, rep->buf, rep->read_len);
     }
+    
     return ret;
 
 out_fail:
@@ -106,21 +113,41 @@ out_fail:
     return ret;
 }
 
+extern ssize_t do_sys_file_read(unsigned int fd, char __user* buf, size_t count);
 int process_remote_read_req(struct pcn_kmsg_message *msg)
 {
     int ret = 0;
     remote_read_req_t* req = (remote_read_req_t*)msg;
-    BUG_ON(!req); 
-    // TODO: Process the read request 
+    remote_read_reply_t* rep = kmalloc(sizeof(remote_read_reply_t), GFP_KERNEL);
+    BUG_ON(!req);
+
+    rep->origin_ws = req->origin_ws;
+    rep->fd = req->fd;
+    rep->read_len = do_sys_file_read(req->fd, rep->buf, req->read_len);
+    
+    if (rep->read_len > 0) {
+        pcn_kmsg_send(current->remote_nid, rep, sizeof(*rep));
+    }
+
+
     return ret;
 }
 
 static int handle_remote_read_reply(struct pcn_kmsg_message *msg)
 {
     int ret = 0;
-    // TODO: Populate;
+    remote_read_reply_t *rep = (remote_read_reply_t*) msg;
+   
+    struct wait_station* ws = wait_station(rep->origin_ws);
+	ws->private = rep->buf;
+	smp_mb();
+
+	if (atomic_dec_and_test(&ws->pendings_count))
+		complete(&ws->pendings);
+
     return ret;
 }
+EXPORT_SYMBOL(handle_remote_read_reply);
 
 DEFINE_KMSG_RW_HANDLER(remote_read_req, remote_read_req_t, origin_pid);
 

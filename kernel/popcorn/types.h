@@ -51,10 +51,7 @@ struct remote_context {
 	spinlock_t spawn_requests_lock;
 	struct list_head spawn_requests;
 
-    /* Remote file management*/
-    struct completion file_read_reply_received;
-    int remote_read_test[4];
-	pid_t remote_tgids[MAX_POPCORN_NODES];
+    pid_t remote_tgids[MAX_POPCORN_NODES];
 };
 
 struct remote_context *get_task_remote(struct task_struct *tsk);
@@ -348,6 +345,7 @@ DEFINE_PCN_KMSG(remote_write_req_t, REMOTE_FILE_WRITE_FIELDS);
  */
 #define REMOTE_FILE_READ_REQ_FIELDS \
     pid_t origin_pid;\
+    int origin_ws;\
     unsigned int fd;\
     ssize_t read_len;
 DEFINE_PCN_KMSG(remote_read_req_t, REMOTE_FILE_READ_REQ_FIELDS);
@@ -356,8 +354,10 @@ DEFINE_PCN_KMSG(remote_read_req_t, REMOTE_FILE_READ_REQ_FIELDS);
  * Remote file read reply.
  */
 #define REMOTE_FILE_READ_REPLY_FIELDS \
-    pid_t origin_pid;\
+    pid_t remote_pid;\
+    int origin_ws;\
     unsigned int fd;\
+    char buf[READ_KMSG_LEN];\
     ssize_t read_len;
 DEFINE_PCN_KMSG(remote_read_reply_t, REMOTE_FILE_READ_REPLY_FIELDS);
 /**

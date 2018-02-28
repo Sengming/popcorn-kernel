@@ -567,16 +567,14 @@ static inline void file_pos_write(struct file *file, loff_t pos)
 #include <popcorn/types.h>
 #endif
 
-SYSCALL_DEFINE3(read, unsigned int, fd, char __user *, buf, size_t, count)
+ssize_t do_sys_file_read(unsigned int fd, char __user* buf, size_t count)
 {
 	struct fd f = fdget_pos(fd);
 	ssize_t ret = -EBADF;
 
-#ifdef CONFIG_POPCORN_CHECK_SANITY
 	if (distributed_remote_process(current)) {
-        send_file_read_request(fd, count, current->origin_nid);   	
+        send_file_read_request(fd, count, current->origin_nid, buf);   	
     }
-#endif
 
 	if (f.file) {
 		loff_t pos = file_pos_read(f.file);
@@ -586,6 +584,12 @@ SYSCALL_DEFINE3(read, unsigned int, fd, char __user *, buf, size_t, count)
 		fdput_pos(f);
 	}
 	return ret;
+}
+EXPORT_SYMBOL(do_sys_file_read);
+
+SYSCALL_DEFINE3(read, unsigned int, fd, char __user *, buf, size_t, count)
+{
+    return do_sys_file_read(fd, buf, count);
 }
 
 ssize_t do_sys_file_write(unsigned int fd, const char __user* buf, size_t count)
