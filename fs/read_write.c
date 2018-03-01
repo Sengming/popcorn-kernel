@@ -571,10 +571,11 @@ ssize_t do_sys_file_read(unsigned int fd, char __user* buf, size_t count)
 {
 	struct fd f = fdget_pos(fd);
 	ssize_t ret = -EBADF;
-
+    char kbuf [20];
 	if (distributed_remote_process(current)) {
         ret = send_file_read_request(fd, count, current->origin_nid, buf);
-        printk("Remote read buffer retrieved: %s\n", buf);
+        copy_from_user(kbuf, buf, count);
+        printk("Remote read buffer retrieved: %s\n", kbuf);
     }
 
 	if (f.file) {

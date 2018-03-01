@@ -93,20 +93,19 @@ ssize_t send_file_read_request(unsigned int fd, size_t count, int origin_nid, ch
     req->origin_pid = current->origin_pid; 
     req->fd = fd;
     req->read_len = count;
-   
+    req->origin_ws = ws->id; 
     if (!!(ret = pcn_kmsg_send(origin_nid, req, sizeof(*req)))) {
         goto out_fail;
     }
 
-    printk("send_file_read_request, before wait at station\n");
     /* Ensure first read request has completed before sending another*/
     rep = wait_at_station(ws);
 	put_wait_station(ws);
-
+    //printk("Wait finished but haven't copied to user\n");
     if (!WARN_ON(rep == NULL)){
         copy_to_user(user_buf, rep->buf, rep->read_len);
     }
-    printk("send_file_read_request, after wait at station\n");
+    //printk("send_file_read_request, after wait at station\n");
     return rep->read_len;
 
 out_fail:
@@ -128,8 +127,6 @@ int process_remote_read_req(struct pcn_kmsg_message *msg)
     rep->origin_ws = req->origin_ws;
     rep->fd = req->fd;
     rep->read_len = do_sys_file_read(req->fd, rep->buf, req->read_len);
-    printk("rep->read_len: %d\n", rep->read_len);
-    printk("remonte nid: %d\n", current->remote_nid);
     if (rep->read_len > 0) {
         pcn_kmsg_send(current->remote_nid, rep, sizeof(*rep));
     }
@@ -143,13 +140,13 @@ static inline int handle_remote_read_reply(struct pcn_kmsg_message *msg)
     int ret = 0;
     remote_read_reply_t *rep = (remote_read_reply_t*) msg;
     struct wait_station* ws = wait_station(rep->origin_ws);
-    printk("Handle remote read reply called\n");   
-	ws->private = rep->buf;
+	ws->private = rep;
 	smp_mb();
-
-	if (atomic_dec_and_test(&ws->pendings_count))
-		complete(&ws->pendings);
-
+    //if (atomic_dec_and_test(&ws->pendings_count)){
+    //    printk("pending completed!\n");
+	//	complete(&ws->pendings);
+    //}
+    complete(&ws->pendings);
     return ret;
 }
 
