@@ -32,6 +32,18 @@
 //    return retVal;
 //}
 
+
+/**
+ * @brief 
+ * When remote calls write system call, invoke this and send request.
+ * @param fd
+ * @param buf
+ * @param count
+ * @param origin_nid
+ *
+ * @return
+ * Reserved for error handling.
+ */
 int send_file_write_request(unsigned int fd, const char __user* buf, size_t count, int origin_nid)
 {
     int ret = 0;
@@ -54,14 +66,25 @@ int send_file_write_request(unsigned int fd, const char __user* buf, size_t coun
         goto out_fail;
     }
         
+    kfree(req);
     return ret;
 
+    /* Redundant right now, add extra error handling here if required */
 out_fail:
     kfree(req);
     return ret;
 }
 
 extern ssize_t do_sys_file_write(unsigned int fd, const char __user* buf, size_t count);
+
+/**
+ * @brief 
+ * Called on the origin node, writes data passed to it.
+ * @param msg
+ *
+ * @return
+ * Reserved
+ */
 int process_remote_write(struct pcn_kmsg_message *msg)
 {
     remote_write_req_t* req = (remote_write_req_t*)msg;
@@ -80,6 +103,18 @@ DEFINE_KMSG_RW_HANDLER(remote_write, remote_write_req_t, origin_pid);
 /////////////////////////////////////////////////////////////////////
 
 
+/**
+ * @brief 
+ * Invoked by remote node, requests the origin to read the file
+ * in our stead.
+ * @param fd
+ * @param count
+ * @param origin_nid
+ * @param user_buf
+ *
+ * @return 
+ * Reserved
+ */
 ssize_t send_file_read_request(unsigned int fd, size_t count, int origin_nid, char __user* user_buf)
 {
     ssize_t ret = 0;
@@ -115,6 +150,17 @@ out_fail:
 }
 
 extern ssize_t do_sys_file_read(unsigned int fd, char __user* buf, size_t count);
+
+/**
+ * @brief 
+ * This function will be called by the origin node when receiving the remote read
+ * request. We just call do_sys_file_read from here and pass it read params.
+ * 
+ * @param msg
+ *
+ * @return 
+ * Reserved for future error return if needed.
+ */
 int process_remote_read_req(struct pcn_kmsg_message *msg)
 {
     int ret = 0;
@@ -123,7 +169,7 @@ int process_remote_read_req(struct pcn_kmsg_message *msg)
     BUG_ON(!req);
 
     /* Build response */
-	rep->header.type = PCN_KMSG_TYPE_FILE_REMOTE_READ_REPLY;
+	rep->header.type = PCN_KMSG_TYPE_FILE_REMOTE_READ_REQ;
 	rep->header.prio = PCN_KMSG_PRIO_NORMAL;
     rep->origin_ws = req->origin_ws;
     rep->fd = req->fd;
@@ -138,6 +184,15 @@ int process_remote_read_req(struct pcn_kmsg_message *msg)
     return ret;
 }
 
+
+/**
+ * @brief 
+ * Handles reply to a remote read request on the remote node. 
+ * @param msg
+ *
+ * @return 
+ * Reserved for future error number return if needed.
+ */
 static inline int handle_remote_read_reply(struct pcn_kmsg_message *msg)
 {
     int ret = 0;
