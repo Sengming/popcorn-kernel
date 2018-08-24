@@ -168,7 +168,7 @@ int process_remote_read_req(struct pcn_kmsg_message *msg)
     BUG_ON(!req);
 
     /* Build response */
-	rep->header.type = PCN_KMSG_TYPE_FILE_REMOTE_READ_REQ;
+	rep->header.type = PCN_KMSG_TYPE_FILE_REMOTE_READ_REPLY;
 	rep->header.prio = PCN_KMSG_PRIO_NORMAL;
     rep->origin_ws = req->origin_ws;
     rep->fd = req->fd;
