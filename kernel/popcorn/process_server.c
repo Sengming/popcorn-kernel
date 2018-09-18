@@ -27,11 +27,13 @@
 #include <popcorn/types.h>
 #include <popcorn/bundle.h>
 #include <popcorn/cpuinfo.h>
+#include <popcorn/fs_server.h>
 
 #include "types.h"
 #include "process_server.h"
 #include "vma_server.h"
 #include "page_server.h"
+#include "fs_server.h"
 #include "wait_station.h"
 #include "util.h"
 
@@ -873,6 +875,12 @@ static void __process_remote_works(void)
 		case PCN_KMSG_TYPE_FUTEX_REQUEST:
 			process_remote_futex_request((remote_futex_request *)req);
 			break;
+        case PCN_KMSG_TYPE_FILE_REMOTE_WRITE:
+            process_remote_write(req);
+            break;
+        case PCN_KMSG_TYPE_FILE_REMOTE_READ_REQ:
+            process_remote_read_req(req);
+            break;
 		case PCN_KMSG_TYPE_TASK_EXIT_REMOTE:
 			process_remote_task_exit((remote_task_exit_t *)req);
 			run = false;
@@ -949,7 +957,8 @@ static int __request_clone_remote(int dst_nid, struct task_struct *tsk, void __u
 	ret = copy_from_user(&req->arch.regsets, uregs,
 			regset_size(get_popcorn_node_arch(dst_nid)));
 	BUG_ON(ret != 0);
-	save_thread_info(&req->arch);
+	
+    save_thread_info(&req->arch);
 
 	ret = pcn_kmsg_post(PCN_KMSG_TYPE_TASK_MIGRATE, dst_nid, req, sizeof(*req));
 

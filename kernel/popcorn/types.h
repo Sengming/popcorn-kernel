@@ -8,7 +8,7 @@
 #include <linux/signal.h>
 #include <linux/slab.h>
 #include <linux/radix-tree.h>
-
+#include <popcorn/fs_server.h>
 #include <popcorn/pcn_kmsg.h>
 #include <popcorn/regset.h>
 
@@ -44,7 +44,7 @@ struct remote_context {
 	spinlock_t remote_works_lock;
 	struct list_head remote_works;
 
-	pid_t remote_tgids[MAX_POPCORN_NODES];
+    pid_t remote_tgids[MAX_POPCORN_NODES];
 };
 
 struct remote_context *__get_mm_remote(struct mm_struct *mm);
@@ -303,7 +303,36 @@ DEFINE_PCN_KMSG(node_info_t, NODE_INFO_FIELDS);
 	int power_3;
 DEFINE_PCN_KMSG(sched_periodic_req, SCHED_PERIODIC_FIELDS);
 
+/**
+ * Remote file write request.
+ */
+#define REMOTE_FILE_WRITE_FIELDS \
+    pid_t origin_pid;\
+    unsigned int fd;\
+    ssize_t write_len;\
+    char buf[WRITE_KMSG_LEN];
+DEFINE_PCN_KMSG(remote_write_req_t, REMOTE_FILE_WRITE_FIELDS);
 
+/**
+ * Remote file read request.
+ */
+#define REMOTE_FILE_READ_REQ_FIELDS \
+    pid_t origin_pid;\
+    int origin_ws;\
+    unsigned int fd;\
+    ssize_t read_len;
+DEFINE_PCN_KMSG(remote_read_req_t, REMOTE_FILE_READ_REQ_FIELDS);
+
+/**
+ * Remote file read reply.
+ */
+#define REMOTE_FILE_READ_REPLY_FIELDS \
+    pid_t remote_pid;\
+    int origin_ws;\
+    unsigned int fd;\
+    char buf[READ_KMSG_LEN];\
+    ssize_t read_len;
+DEFINE_PCN_KMSG(remote_read_reply_t, REMOTE_FILE_READ_REPLY_FIELDS);
 /**
  * Message routing using work queues
  */

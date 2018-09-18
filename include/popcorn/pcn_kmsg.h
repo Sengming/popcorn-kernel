@@ -59,6 +59,11 @@ enum pcn_kmsg_type {
 	/* Schedule server */
 	PCN_KMSG_TYPE_SCHED_PERIODIC,		/* XXX sched requires help!! */
 
+    /* Files server */
+    PCN_KMSG_TYPE_FILE_REMOTE_WRITE,
+    PCN_KMSG_TYPE_FILE_REMOTE_READ_REQ,
+    PCN_KMSG_TYPE_FILE_REMOTE_READ_REPLY,
+
 	PCN_KMSG_TYPE_MAX
 };
 

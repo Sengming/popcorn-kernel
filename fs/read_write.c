@@ -18,6 +18,8 @@
 #include <linux/compat.h>
 #include "internal.h"
 
+#include <popcorn/fs_server.h>
+#include <popcorn/types.h>
 #include <asm/uaccess.h>
 #include <asm/unistd.h>
 
@@ -445,8 +447,8 @@ ssize_t vfs_read(struct file *file, char __user *buf, size_t count, loff_t *pos)
 		return -EBADF;
 	if (!(file->f_mode & FMODE_CAN_READ))
 		return -EINVAL;
-	if (unlikely(!access_ok(VERIFY_WRITE, buf, count)))
-		return -EFAULT;
+	//if (unlikely(!access_ok(VERIFY_WRITE, buf, count)))
+	//	return -EFAULT;
 
 	ret = rw_verify_area(READ, file, pos, count);
 	if (ret >= 0) {
@@ -528,8 +530,10 @@ ssize_t vfs_write(struct file *file, const char __user *buf, size_t count, loff_
 		return -EBADF;
 	if (!(file->f_mode & FMODE_CAN_WRITE))
 		return -EINVAL;
-	if (unlikely(!access_ok(VERIFY_READ, buf, count)))
-		return -EFAULT;
+	// TODO (Smyte): Add way to differentiate between remote or regular write to enable
+    // checking
+    //if (unlikely(!access_ok(VERIFY_READ, buf, count)))
+	//	return -EFAULT;
 
 	ret = rw_verify_area(WRITE, file, pos, count);
 	if (ret >= 0) {
@@ -563,16 +567,16 @@ static inline void file_pos_write(struct file *file, loff_t pos)
 #include <popcorn/types.h>
 #endif
 
-SYSCALL_DEFINE3(read, unsigned int, fd, char __user *, buf, size_t, count)
+ssize_t do_sys_file_read(unsigned int fd, char __user* buf, size_t count)
 {
 	struct fd f = fdget_pos(fd);
 	ssize_t ret = -EBADF;
-
-#ifdef CONFIG_POPCORN_CHECK_SANITY
-	if (WARN_ON(distributed_remote_process(current))) {
-		printk("  file read at remote thread is not supported yet\n");
-	}
-#endif
+    char kbuf [20];
+	if (distributed_remote_process(current)) {
+        ret = send_file_read_request(fd, count, current->origin_nid, buf);
+        copy_from_user(kbuf, buf, count);
+        printk("Remote read buffer retrieved: %s\n", kbuf);
+    }
 
 	if (f.file) {
 		loff_t pos = file_pos_read(f.file);
@@ -583,28 +587,39 @@ SYSCALL_DEFINE3(read, unsigned int, fd, char __user *, buf, size_t, count)
 	}
 	return ret;
 }
+EXPORT_SYMBOL(do_sys_file_read);
+
+SYSCALL_DEFINE3(read, unsigned int, fd, char __user *, buf, size_t, count)
+{
+    return do_sys_file_read(fd, buf, count);
+}
+
+ssize_t do_sys_file_write(unsigned int fd, const char __user* buf, size_t count)
+{
+	struct fd f = fdget_pos(fd);
+    ssize_t ret = -EBADF;
+    //printk("sys_file_write called FD is: %d, buf: %s, count: %d\n", (int)fd, buf, (int)count);
+    
+    if (distributed_remote_process(current)) {
+        /* Handle remote thread write to origin */
+        send_file_write_request(fd, buf, count, current->origin_nid);
+    }
+
+    if (f.file) {
+    	loff_t pos = file_pos_read(f.file);
+    	ret = vfs_write(f.file, buf, count, &pos);
+        if (ret >= 0)
+    		file_pos_write(f.file, pos);
+    	fdput_pos(f);
+    }
+	return ret;
+}
+EXPORT_SYMBOL(do_sys_file_write);
 
 SYSCALL_DEFINE3(write, unsigned int, fd, const char __user *, buf,
 		size_t, count)
 {
-	struct fd f = fdget_pos(fd);
-	ssize_t ret = -EBADF;
-
-#ifdef CONFIG_POPCORN_CHECK_SANITY
-	if (WARN_ON(distributed_remote_process(current))) {
-		printk("  file write at remote thread is not supported yet\n");
-	}
-#endif
-
-	if (f.file) {
-		loff_t pos = file_pos_read(f.file);
-		ret = vfs_write(f.file, buf, count, &pos);
-		if (ret >= 0)
-			file_pos_write(f.file, pos);
-		fdput_pos(f);
-	}
-
-	return ret;
+    return do_sys_file_write(fd, buf, count);
 }
 
 SYSCALL_DEFINE4(pread64, unsigned int, fd, char __user *, buf,
